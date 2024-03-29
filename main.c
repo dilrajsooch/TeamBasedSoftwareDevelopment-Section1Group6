@@ -255,4 +255,359 @@ int main() {
 
     return 0;
 }
+// Tijeet Singh Modules
+// main.c 
+
+#include "reservation.h"
+
+
+int main() {
+    int **seat, choice, price = 20, selection, i;
+    seat = (int **)calloc(101, sizeof(int *));
+    for (i = 0; i < 3; i++)
+        *(seat + i) = (int *)calloc(101, sizeof(int));
+    int x;
+    while (x != 5) {
+        choice = reservationChoice();
+        switch (choice) {
+            case 1:
+                price = changeName();
+                break;
+            case 2:
+                details();
+                break;
+            case 3:
+                selection = movieSelection();
+                reservation(seat[selection - 1], price, selection);
+                break;
+            case 4:
+                selection = movieSelection();
+                cancel(seat[selection - 1]);
+                break;
+            case 5:
+                x = 5;
+                break;
+            default:
+                printf("Choice not available\n");
+                break;
+        }
+    }
+    return 0;
+}
+// reservation.c
+
+#include "reservation.h"
+
+int count=0;
+float totalFoodBill;
+
+// Declare an array of food items
+struct FoodItem foodMenu[] = {
+        {"Popcorn", 15},
+        {"Soft Drink", 10},
+        {"Nachos", 20},
+        // Add more food items as needed
+};
+// function to edit user name 
+int changeName() {
+    int bookingId;
+    printf("Please enter your booking id: ");
+    if (scanf_s("%d", &bookingId) != 1) {
+        printf("Error: Invalid input. Please enter a valid booking ID.\n");
+        // Clear input buffer
+        while (getchar() != '\n');
+        return 0;
+    }
+
+    char isFound = 'N'; // Initialize isFound to 'N'
+    for(int i = 0; i < count; i++) {
+        if(bookingId == person[i].id) {
+            printf("Please enter your name: ");
+            scanf_s(" %19[^\n]%*c", &person[i].name);
+            printf("\n");
+            printf("Name successfully Updated, Below are the new Booking details\n");
+            viewBookedDetails(person[i]);
+            isFound = 'Y';
+            sleep(2);
+            break; // Exit the loop once booking ID is found
+        }
+    }
+    if(isFound != 'Y') {
+        printf("\n<<<<<<<<<< No Booking details found for the provided ID >>>>>>>>>>\n\n");
+        sleep(2);
+        return 0;
+    }
+    return 0;
+}
+// fucntion to reserve a booking for user 
+void reservation(int *array, int price, int selection) {
+    int i, j;
+    char food_choice[4];
+    char email[100];
+
+    printf("\n                                SCREEN\n\n\n");
+    for (i = 1; i <= 100; i++) {
+        if (array[i] == 0)
+            printf("%d\t", i);
+        else
+            printf("*\t", i);
+        if (i % 10 == 0)
+            printf("\n\n");
+    }
+    printf("Please enter your name: ");
+    scanf_s(" %19[^\n]%*c", &person[count].name);
+    printf("Please enter your email address: ");
+    scanf_s("%99s", email);
+    printf("Please enter your phone number: ");
+    if (scanf_s("%u", &person[count].phone) != 1) {
+        printf("Error: Invalid input. Please enter a valid phone number.\n");
+        // Clear input buffer
+        while (getchar() != '\n');
+        return;
+    }
+    printf("Which seat number you want? ");
+    if (scanf_s("%d", &j) != 1 || j > 100 || j < 1) {
+        printf("Error: Invalid input. Please enter a seat number between 1 and 100.\n");
+        // Clear input buffer
+        while (getchar() != '\n');
+        return;
+    }
+    if (array[j] == 1) {
+        printf("Sorry, this ticket is already booked! Please choose another seat.\n");
+        return;
+    } else
+        array[j] = 1;
+    person[count].seat = j;
+
+    // Food ordering
+    int totalFoodCost = orderFood(food_choice);
+
+    // Calculate total bill including ticket price and food
+    int totalBill = price + totalFoodCost;
+    person[count].totalPrice = totalBill;
+    printf("\nProcessing your payment\n");
+
+    for(int k=0;k<3;k++) {
+        printf(".\n");
+        sleep(1);
+    }
+
+    printf("\n\n\nYour payment has been processed\n");
+    printf("\nReservation details have been emailed to %s.\n", email);
+    // Print all reservation details along with the total bill
+    printf("\nBelow is your emailed Reservation Details:\n");
+    srand(time(NULL));
+    int r = rand();
+    person[count].id= r;
+    viewBookedDetails(person[count]);
+    sleep(2);
+}
+// fucntion for ordering food 
+int orderFood(const char *food_choice) {
+    int totalFood = 0;
+    printf("Do you want to order food? (yes/no): ");
+    scanf_s("%s", food_choice);
+    if (strcmp(food_choice, "yes") == 0) {
+        printf("=========== FOOD MENU ===========\n");
+        for (int i = 0; i < sizeof(foodMenu) / sizeof(foodMenu[0]); i++) {
+            printf("%d. %s - $%d\n", i + 1, foodMenu[i].name, foodMenu[i].price);
+        }
+        printf("0 - End Order\n");
+        printf("=================================\n");
+
+        int totalFoodItems = sizeof(foodMenu) / sizeof(foodMenu[0]);
+        int order[totalFoodItems];
+        memset(order, 0, sizeof(order)); // Initialize order array to zeros
+
+        printf("Enter the number corresponding to the food item you want to order :\n");
+        int choice;
+        while (1) {
+            scanf("%d", &choice);
+            if (choice == 0)
+                break;
+            if (choice < 1 || choice > totalFoodItems) {
+                printf("Invalid choice. Please enter a valid option.\n");
+                continue;
+            }
+            order[choice - 1]++;
+        }
+
+        // Calculate and print the total bill for food items
+
+        printf("\nYour Food Order:\n");
+        for (int i = 0; i < totalFoodItems; i++) {
+            if (order[i] > 0) {
+                printf("%s - Quantity: %d - Price: $%d\n", foodMenu[i].name, order[i], foodMenu[i].price * order[i]);
+                totalFood += foodMenu[i].price * order[i];
+            }
+        }
+        printf("Total Food Bill: $%d\n\n", totalFood);
+    }
+    else if (strcmp(food_choice, "no") == 0) {
+       // do nothing
+    } else {
+        printf("Wrong Input");
+    }
+    return totalFood;
+}
+// fucntion to view number of bookings 
+void viewBookedDetails(struct MovieDetails psn) {
+    printf("------------------------------------\n");
+    printf(ANSI_COLOR_RED "Booking ID: %d\n" ANSI_COLOR_RESET, psn.id);
+    printf("Name: %s\n", psn.name);
+    printf("Phone Number: %u\n", psn.phone);
+    printf("Seat Number: %d\n", psn.seat);
+    printf("Total Bill: $%d\n", psn.totalPrice);
+    printf("------------------------------------\n");
+    count++;
+
+}
+
+void details() {
+    if(count ==0) {
+        printf("\n<<<<<<<<<< No Booking details found >>>>>>>>>>\n\n");
+        sleep(2);
+        return;
+    }
+    printf("\n<<<<<<<<<< Reservation Details : Start >>>>>>>>>>\n\n");
+        for (int i = 0; i < count; i++) {
+            if(person[i].id >0) {
+                viewBookedDetails(person[i]);
+            }
+        }
+    printf("\n<<<<<<<<<< Reservation Details : End >>>>>>>>>>\n\n");
+        sleep(2);
+  }
+// fucntion to print main menu 
+int reservationChoice() {
+    int choice;
+    printf("                 Movie Ticket Booking System\n");
+    printf("||================================================================||\n");
+    printf("||             1- To edit the reservation name:                   ||\n");
+    printf("||             2- To view reserved tickets :                      ||\n");
+    printf("||             3- To purchase ticket:                             ||\n");
+    printf("||             4- To cancel the seat:                             ||\n");
+    printf("||             5- Exit system:                                    ||\n");
+    printf("||================================================================||\n");
+    printf("  Enter your choice: \n");
+
+    while (1) {
+        if (scanf_s("%d", &choice) != 1 || choice < 1 || choice > 5) {
+            printf("Invalid choice. Please enter a number between 1 and 5.\n");
+            // Clear input buffer
+            while (getchar() != '\n');
+        } else {
+            break;
+        }
+    }
+    return choice;
+}
+
+// fucntion to print movie menu 
+int movieSelection() {
+    int i;
+
+    printf("\t\t\tSelect A Movie to start\n");
+    printf("\t\t\t----------------------------\n\n");
+    printf("\t\t\tPress 1 for Avengers: EndGame\n\n");
+    printf("\t\t\tPress 2 for Captain Marvel\n\n");
+    printf("\t\t\tPress 3 for Spider-Man: Far From Home\n\n");
+    printf("\t\t\t----------------------------\n\n");
+    printf("Choice:");
+
+    while (1) {
+        if (scanf_s("%d", &i) != 1 || (i < 1 || i > 3)) {
+            printf("Error: Invalid input. Please enter a valid movie selection (1-3).\n");
+            // Clear input buffer
+            while (getchar() != '\n');
+        } else {
+            break;
+        }
+    }
+
+    return i;
+}
+
+// fucntion to cancel booking 
+void cancel(int *array) {
+    int Cseat, i, stop;
+    printf("Please enter ID number of ticket: ");
+    if (scanf_s("%d", &Cseat) != 1) {
+        printf("Error: Invalid input. Please enter a valid ticket ID.\n");
+        // Clear input buffer
+        while (getchar() != '\n');
+        return;
+    }
+
+    for (i = 0; i < count; i++) {
+        if (Cseat == person[i].id) {
+            stop = 5;
+
+            printf("%s, your seat %d is cancelled.\n", person[i].name, person[i].seat);
+            array[person[i].seat] = 0;
+
+            // Remove canceled reservation from the list
+            for (int j = i; j < count - 1; j++) {
+                person[j] = person[j + 1];
+            }
+            count--; // Decrease the count of reservations
+            i--; // Adjust the index after removal
+            break;
+        }
+    }
+    if (stop != 5)
+        printf("Ticket ID number is incorrect. Please enter the correct one to cancel the ticket.\n");
+}
+
+// reservation.h
+
+#pragma once
+#ifndef RESERVATION_H_
+#define RESERVATION_H_
+
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<unistd.h>
+#include<time.h>
+
+
+
+// Define a structure for food items
+struct FoodItem {
+    char name[50];
+    int price;
+};
+
+
+
+struct MovieDetails {
+    char name[20];
+    unsigned int phone;
+    int seat;
+    int id;
+    int totalPrice;
+};
+
+
+
+
+struct MovieDetails person[300];
+
+int changeName();
+void reservation(int *array, int price, int selection);
+void viewBookedDetails(struct MovieDetails person);
+int orderFood(const char *food_choice);
+int reservationChoice();
+int movieSelection();
+void cancel(int *array);
+void details();
+
+#endif
+
+
+
 _________________________________________________________________________________________________________________________________
